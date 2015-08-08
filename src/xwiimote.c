@@ -45,6 +45,9 @@
 #include <xserver-properties.h>
 #include <xwiimote.h>
 
+#define  xf86IDrvMsg(a, ...)    xf86Msg( __VA_ARGS__ )
+
+
 #define MIN_KEYCODE 8
 
 #define XWIIMOTE_ACCEL_HISTORY_NUM 12
@@ -289,9 +292,9 @@ static int xwiimote_prepare_abs(struct xwiimote_dev *dev, DeviceIntPtr device, i
 		goto err_out;
 	}
 
-	xf86InitValuatorAxisStruct(device, 0, atoms[0], xmin, xmax, 0, 0, 0, Absolute);
+	xf86InitValuatorAxisStruct(device, 0, atoms[0], xmin, xmax, 0, 0, 0/*, Absolute*/);
 	xf86InitValuatorDefaults(device, 0);
-	xf86InitValuatorAxisStruct(device, 1, atoms[1], ymin, ymax, 0, 0, 0, Absolute);
+	xf86InitValuatorAxisStruct(device, 1, atoms[1], ymin, ymax, 0, 0, 0/*, Absolute*/);
 	xf86InitValuatorDefaults(device, 1);
 
 err_out:
@@ -323,9 +326,9 @@ static int xwiimote_prepare_rel(struct xwiimote_dev *dev, DeviceIntPtr device, i
 		goto err_out;
 	}
 
-	xf86InitValuatorAxisStruct(device, 0, atoms[0], xmin, xmax, 0, 0, 0, Relative);
+	xf86InitValuatorAxisStruct(device, 0, atoms[0], xmin, xmax, 0, 0, 0/*, Relative*/);
 	xf86InitValuatorDefaults(device, 0);
-	xf86InitValuatorAxisStruct(device, 1, atoms[1], ymin, ymax, 0, 0, 0, Relative);
+	xf86InitValuatorAxisStruct(device, 1, atoms[1], ymin, ymax, 0, 0, 0/*, Relative*/);
 	xf86InitValuatorDefaults(device, 1);
 
 err_out:
@@ -706,6 +709,7 @@ static int xwiimote_control(DeviceIntPtr device, int what)
 			return BadValue;
 	}
 }
+
 
 /*
  * Check whether the device is actually a Wii Remote device and then retrieve
@@ -1559,6 +1563,9 @@ static int xwiimote_preinit(InputDriverPtr drv, InputInfoPtr info, int flags)
 	dev->ir_avg_weight = XWIIMOTE_IR_AVG_WEIGHT;
 	dev->ir_keymap_expiry_secs = XWIIMOTE_IR_KEYMAP_EXPIRY_SECS;
 
+  xf86IDrvMsg(info, X_ERROR, "entry\n");
+
+
 	dev->device = xf86FindOptionValue(info->options, "Device");
 	if (!dev->device) {
 		xf86IDrvMsg(info, X_ERROR, "No Device specified\n");
@@ -1590,10 +1597,13 @@ static int xwiimote_preinit(InputDriverPtr drv, InputInfoPtr info, int flags)
 
 	xwiimote_add_dev(dev);
 	xwiimote_configure(dev);
+  xf86IDrvMsg(info, X_ERROR, "pre sucess\n");
 
 	return Success;
 
 err_free:
+  xf86IDrvMsg(info, X_ERROR, "pre fail\n");
+
 	free(dev);
 	info->private = NULL;
 	return ret;
