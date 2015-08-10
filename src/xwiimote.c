@@ -1533,80 +1533,98 @@ static void xwiimote_configure(struct xwiimote_dev *dev)
 	xwiimote_configure_ir(dev);
 }
 
-static int xwiimote_preinit(InputDriverPtr drv, InputInfoPtr info, int flags)
+static const char *xwiimote_defaults[] = {
+	"XkbRules", "evdev",
+	"XkbModel", "evdev",
+	"XkbLayout", "us",
+	NULL
+};
+
+static struct _LocalDeviceRec *xwiimote_preinit(struct _InputDriverRec *drv, IDevPtr dev, int flags)
 {
-	struct xwiimote_dev *dev;
-	int ret;
-
-	dev = malloc(sizeof(*dev));
-	if (!dev)
-		return BadAlloc;
-
-	memset(dev, 0, sizeof(*dev));
-	dev->info = info;
-	dev->dev_id = -1;
-	info->private = dev;
+  InputInfoPtr        info;
+  struct xwiimote_dev *xwiimote;
+  int ret;
+  
+  if (!(info = xf86AllocateInput(drv, 0)))
+    return NULL;
+  xwiimote = xcalloc(1, sizeof(*xwiimote));
+	if (!xwiimote) {
+    info->private = NULL;
+    xf86DeleteInput(info, 0);
+		return NULL;
+  }
+	xwiimote->info = info;
+	xwiimote->dev_id = -1;
+	info->private = xwiimote;
+  info->name = xstrdup(dev->identifier);
+  info->flags = 0;
 	info->type_name = (char*)XI_MOUSE;
+  info->conf_idev = dev;
 	info->device_control = xwiimote_control;
 	info->read_input = NULL;
 	info->switch_mode = NULL;
 	info->fd = -1;
-	dev->mp_x = 0;
-	dev->mp_y = 1;
-	dev->mp_z = 2;
-	dev->mp_x_scale = 1;
-	dev->mp_y_scale = 1;
-	dev->mp_z_scale = 1;
-	dev->ir_avg_radius = XWIIMOTE_IR_AVG_RADIUS;
-	dev->ir_avg_max_samples = XWIIMOTE_IR_AVG_MAX_SAMPLES;
-	dev->ir_avg_min_samples = XWIIMOTE_IR_AVG_MIN_SAMPLES;
-	dev->ir_avg_weight = XWIIMOTE_IR_AVG_WEIGHT;
-	dev->ir_keymap_expiry_secs = XWIIMOTE_IR_KEYMAP_EXPIRY_SECS;
+	xwiimote->mp_x = 0;
+	xwiimote->mp_y = 1;
+	xwiimote->mp_z = 2;
+	xwiimote->mp_x_scale = 1;
+	xwiimote->mp_y_scale = 1;
+	xwiimote->mp_z_scale = 1;
+	xwiimote->ir_avg_radius = XWIIMOTE_IR_AVG_RADIUS;
+	xwiimote->ir_avg_max_samples = XWIIMOTE_IR_AVG_MAX_SAMPLES;
+	xwiimote->ir_avg_min_samples = XWIIMOTE_IR_AVG_MIN_SAMPLES;
+	xwiimote->ir_avg_weight = XWIIMOTE_IR_AVG_WEIGHT;
+	xwiimote->ir_keymap_expiry_secs = XWIIMOTE_IR_KEYMAP_EXPIRY_SECS;
 
   xf86IDrvMsg(info, X_ERROR, "entry\n");
 
-
-	dev->device = xf86FindOptionValue(info->options, "Device");
-	if (!dev->device) {
+	xwiimote->device = xf86FindOptionValue(info->options, "Device");
+	if (!xwiimote->device) {
 		xf86IDrvMsg(info, X_ERROR, "No Device specified\n");
-		ret = BadMatch;
 		goto err_free;
 	}
 
-	if (!xwiimote_validate(dev)) {
-		ret = BadMatch;
+	if (!xwiimote_validate(xwiimote)) {
 		goto err_free;
 	}
 
 	/* Check for duplicate */
-	if (!dev->info->name || strcmp(dev->info->name, XWII_NAME_CORE) ||
-							xwiimote_is_dev(dev)) {
-		xf86IDrvMsg(dev->info, X_INFO, "No core device\n");
-		dev->dup = true;
-		return Success;
+	if (!xwiimote->info->name || strcmp(xwiimote->info->name, XWII_NAME_CORE) ||
+							xwiimote_is_dev(xwiimote)) {
+		xf86IDrvMsg(xwiimote->info, X_INFO, "No core device\n");
+		xwiimote->dup = true;
+		return info;
 	}
-	xf86IDrvMsg(dev->info, X_INFO, "Is a core device\n");
+	xf86IDrvMsg(xwiimote->info, X_INFO, "Is a core device\n");
 
-	dev->ifs = XWII_IFACE_CORE;
-	ret = xwii_iface_new(&dev->iface, dev->root);
+	xwiimote->ifs = XWII_IFACE_CORE;
+	ret = xwii_iface_new(&xwiimote->iface, xwiimote->root);
 	if (ret) {
 		xf86IDrvMsg(info, X_ERROR, "Cannot alloc interface\n");
-		ret = BadValue;
 		goto err_free;
 	}
 
-	xwiimote_add_dev(dev);
-	xwiimote_configure(dev);
+	xwiimote_add_dev(xwiimote);
+	xwiimote_configure(xwiimote);
+
+  xf86CollectInputOptions(info, (const char **) xwiimote_defaults,NULL);
+  xf86OptionListReport(info->options);
+  xf86ProcessCommonOptions(info, info->options);
+
+//  info->flags |= XI86_OPEN_ON_INIT;
+  info->flags |= XI86_CONFIGURED;
+  
   xf86IDrvMsg(info, X_ERROR, "pre sucess\n");
 
-	return Success;
+	return info;
 
 err_free:
   xf86IDrvMsg(info, X_ERROR, "pre fail\n");
-
-	free(dev);
+	free(xwiimote);
 	info->private = NULL;
-	return ret;
+  xf86DeleteInput(info, 0);
+	return NULL;
 }
 
 static void xwiimote_uninit(InputDriverPtr drv, InputInfoPtr info, int flags)
@@ -1631,13 +1649,6 @@ static void xwiimote_uninit(InputDriverPtr drv, InputInfoPtr info, int flags)
 	xf86DeleteInput(info, flags);
 }
 
-static const char *xwiimote_defaults[] = {
-	"XkbRules", "evdev",
-	"XkbModel", "evdev",
-	"XkbLayout", "us",
-	NULL
-};
-
 _X_EXPORT InputDriverRec xwiimote_driver = {
 	1,
 	xwiimote_name,
@@ -1645,7 +1656,7 @@ _X_EXPORT InputDriverRec xwiimote_driver = {
 	xwiimote_preinit,
 	xwiimote_uninit,
 	NULL,
-	xwiimote_defaults,
+	0 // xwiimote_defaults,
 };
 
 static pointer xwiimote_plug(pointer module,
