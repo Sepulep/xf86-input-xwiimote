@@ -93,6 +93,21 @@ static struct func map_key_default[XWII_KEY_NUM] = {
 	[XWII_KEY_TWO] = { .type = FUNC_KEY, .u.key = KEY_2 },
 };
 
+static struct func map_key_default_ir[XWII_KEY_NUM] = {
+	[XWII_KEY_LEFT] = { .type = FUNC_BTN, .u.btn = 1 },
+	[XWII_KEY_RIGHT] = { .type = FUNC_BTN, .u.btn = 3 },
+	[XWII_KEY_UP] = { .type = FUNC_IGNORE, .u.btn = 0 },
+	[XWII_KEY_DOWN] = { .type = FUNC_BTN, .u.btn = 2 },
+	[XWII_KEY_A] = { .type = FUNC_KEY, .u.key = KEY_ENTER },
+	[XWII_KEY_B] = { .type = FUNC_KEY, .u.key = KEY_SPACE },
+	[XWII_KEY_PLUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEUP },
+	[XWII_KEY_MINUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEDOWN },
+	[XWII_KEY_HOME] = { .type = FUNC_KEY, .u.key = KEY_ESC },
+	[XWII_KEY_ONE] = { .type = FUNC_KEY, .u.key = KEY_1 },
+	[XWII_KEY_TWO] = { .type = FUNC_KEY, .u.key = KEY_2 },
+};
+
+
 enum motion_type {
 	MOTION_NONE,
 	MOTION_ABS,
@@ -285,6 +300,7 @@ static int xwiimote_prepare_abs(struct xwiimote_dev *dev, DeviceIntPtr device, i
 	atoms[0] = XIGetKnownProperty(absx);
 	atoms[1] = XIGetKnownProperty(absy);
 
+//  dev->info->dev->valuator->mode = Absolute;
 	if (!InitValuatorClassDeviceStruct(device, num, atoms,
 					GetMotionHistorySize(), Absolute)) {
 		xf86IDrvMsg(dev->info, X_ERROR, "Cannot init valuators\n");
@@ -318,6 +334,7 @@ static int xwiimote_prepare_rel(struct xwiimote_dev *dev, DeviceIntPtr device, i
 	atoms[0] = XIGetKnownProperty(relx);
 	atoms[1] = XIGetKnownProperty(rely);
 
+//  dev->info->dev->valuator->mode = Relative;
 	if (!InitValuatorClassDeviceStruct(device, num, atoms,
 					   GetMotionHistorySize(),
 					   Relative)) {
@@ -394,10 +411,9 @@ static void xwiimote_key(struct xwiimote_dev *dev, struct xwii_event *ev)
 		absolute = 1;
 
 	if (ev->v.key.state) {
-		if (ev->time.tv_sec < dev->ir_last_valid_event.tv_sec + dev->ir_keymap_expiry_secs
-				|| (ev->time.tv_sec == dev->ir_last_valid_event.tv_sec + dev->ir_keymap_expiry_secs
-					&& ev->time.tv_usec < dev->ir_last_valid_event.tv_usec)) {
-			keyset = KEYSET_IR;
+		if (ev->time.tv_sec <= dev->ir_last_valid_event.tv_sec + dev->ir_keymap_expiry_secs) 
+    {
+        keyset = KEYSET_IR;
 		}
 		dev->key_pressed[code] = keyset;
 	} else {
@@ -1443,7 +1459,7 @@ static void xwiimote_configure(struct xwiimote_dev *dev)
 	const char *motion, *key;
 
 	memcpy(dev->map_key[KEYSET_NORMAL], map_key_default, sizeof(map_key_default));
-	memcpy(dev->map_key[KEYSET_IR], map_key_default, sizeof(map_key_default));
+	memcpy(dev->map_key[KEYSET_IR], map_key_default_ir, sizeof(map_key_default_ir));
 
 	motion = xf86FindOptionValue(dev->info->options, "MotionSource");
 	if (!motion)
@@ -1540,7 +1556,7 @@ static const char *xwiimote_defaults[] = {
 	NULL
 };
 
-static struct _LocalDeviceRec *xwiimote_preinit(struct _InputDriverRec *drv, IDevPtr dev, int flags)
+static struct _LocalDeviceRec *xwiimote_preinit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
   InputInfoPtr        info;
   struct xwiimote_dev *xwiimote;
@@ -1577,26 +1593,31 @@ static struct _LocalDeviceRec *xwiimote_preinit(struct _InputDriverRec *drv, IDe
 	xwiimote->ir_avg_weight = XWIIMOTE_IR_AVG_WEIGHT;
 	xwiimote->ir_keymap_expiry_secs = XWIIMOTE_IR_KEYMAP_EXPIRY_SECS;
 
-  xf86IDrvMsg(info, X_ERROR, "entry\n");
+  xf86CollectInputOptions(info, (const char **) xwiimote_defaults,NULL);
+  xf86OptionListReport(info->options);
+  xf86ProcessCommonOptions(info, info->options);
 
 	xwiimote->device = xf86FindOptionValue(info->options, "Device");
 	if (!xwiimote->device) {
 		xf86IDrvMsg(info, X_ERROR, "No Device specified\n");
 		goto err_free;
 	}
+  xf86IDrvMsg(info, X_ERROR, "Device: %s\n",xwiimote->device);
 
 	if (!xwiimote_validate(xwiimote)) {
+		xf86IDrvMsg(info, X_ERROR, "No validate\n");
 		goto err_free;
 	}
 
+  xf86IDrvMsg(xwiimote->info, X_INFO, "name: %s\n",xwiimote->info->name);
 	/* Check for duplicate */
 	if (!xwiimote->info->name || strcmp(xwiimote->info->name, XWII_NAME_CORE) ||
 							xwiimote_is_dev(xwiimote)) {
-		xf86IDrvMsg(xwiimote->info, X_INFO, "No core device\n");
+		xf86IDrvMsg(xwiimote->info, X_INFO, "No core device (dupl.)\n");
 		xwiimote->dup = true;
+    info->flags |= XI86_CONFIGURED;
 		return info;
 	}
-	xf86IDrvMsg(xwiimote->info, X_INFO, "Is a core device\n");
 
 	xwiimote->ifs = XWII_IFACE_CORE;
 	ret = xwii_iface_new(&xwiimote->iface, xwiimote->root);
@@ -1608,19 +1629,17 @@ static struct _LocalDeviceRec *xwiimote_preinit(struct _InputDriverRec *drv, IDe
 	xwiimote_add_dev(xwiimote);
 	xwiimote_configure(xwiimote);
 
-  xf86CollectInputOptions(info, (const char **) xwiimote_defaults,NULL);
-  xf86OptionListReport(info->options);
-  xf86ProcessCommonOptions(info, info->options);
+  //~ xf86CollectInputOptions(info, (const char **) xwiimote_defaults,NULL);
+  //~ xf86OptionListReport(info->options);
+  //~ xf86ProcessCommonOptions(info, info->options);
 
 //  info->flags |= XI86_OPEN_ON_INIT;
   info->flags |= XI86_CONFIGURED;
   
-  xf86IDrvMsg(info, X_ERROR, "pre sucess\n");
-
 	return info;
 
 err_free:
-  xf86IDrvMsg(info, X_ERROR, "pre fail\n");
+  xf86IDrvMsg(info, X_ERROR, "preInit failed\n");
 	free(xwiimote);
 	info->private = NULL;
   xf86DeleteInput(info, 0);
