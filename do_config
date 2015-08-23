@@ -1,0 +1,9 @@
+./configure --prefix=/mnt/utmp/xwiimote \
+SYSDEP_CFLAGS=-I/mnt/utmp/xwiimote/include/ \
+SYSDEP_LIBS="-L/mnt/utmp/xwiimote/lib/ -lxwiimote /mnt/utmp/xwiimote/lib/libudev.a" \
+XORG_CFLAGS="-I/media/Halma/troep/xorg/usr/include/xorg \
+-I/media/Halma/troep/xorg/usr/include/pixman-1" \
+XORG_LIBS=-L/usr/lib/xorg/modules/ \
+LDFLAGS="-Wl,-Bsymbolic"
+
+
