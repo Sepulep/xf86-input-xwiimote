@@ -1,5 +1,8 @@
         X.Org Wii Remote Input Driver
 
+This is a backport of the xf86-input-xwiimote to xorg 1.7.7, for the Openpandora
+handheld. 
+
 This package includes an X.Org input driver for Nintendo Wii Remotes. It is
 based on the xwiimote packages available at http://dvdhrm.github.io/xwiimote.
 
