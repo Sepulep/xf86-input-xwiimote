@@ -80,31 +80,31 @@ struct func {
 };
 
 static struct func map_key_default[XWII_KEY_NUM] = {
+	[XWII_KEY_LEFT] = { .type = FUNC_KEY, .u.key = KEY_DOWN },
+	[XWII_KEY_RIGHT] = { .type = FUNC_KEY, .u.key = KEY_UP },
+	[XWII_KEY_UP] = { .type = FUNC_KEY, .u.key = KEY_LEFT },
+	[XWII_KEY_DOWN] = { .type = FUNC_KEY, .u.key = KEY_RIGHT },
+	[XWII_KEY_A] = { .type = FUNC_KEY, .u.key = KEY_ENTER },
+	[XWII_KEY_B] = { .type = FUNC_KEY, .u.key = KEY_SPACE },
+	[XWII_KEY_PLUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEUP },
+	[XWII_KEY_MINUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEDOWN },
+	[XWII_KEY_HOME] = { .type = FUNC_KEY, .u.key = KEY_ESC },
+	[XWII_KEY_ONE] = { .type = FUNC_KEY, .u.key = KEY_SPACE },
+	[XWII_KEY_TWO] = { .type = FUNC_KEY, .u.key = KEY_ENTER },
+};
+
+static struct func map_key_default_ir[XWII_KEY_NUM] = {
 	[XWII_KEY_LEFT] = { .type = FUNC_KEY, .u.key = KEY_LEFT },
 	[XWII_KEY_RIGHT] = { .type = FUNC_KEY, .u.key = KEY_RIGHT },
 	[XWII_KEY_UP] = { .type = FUNC_KEY, .u.key = KEY_UP },
 	[XWII_KEY_DOWN] = { .type = FUNC_KEY, .u.key = KEY_DOWN },
-	[XWII_KEY_A] = { .type = FUNC_KEY, .u.key = KEY_ENTER },
-	[XWII_KEY_B] = { .type = FUNC_KEY, .u.key = KEY_SPACE },
+	[XWII_KEY_A] = { .type = FUNC_BTN, .u.btn = 1 },
+	[XWII_KEY_B] = { .type = FUNC_BTN, .u.btn = 3 },
 	[XWII_KEY_PLUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEUP },
 	[XWII_KEY_MINUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEDOWN },
 	[XWII_KEY_HOME] = { .type = FUNC_KEY, .u.key = KEY_ESC },
-	[XWII_KEY_ONE] = { .type = FUNC_KEY, .u.key = KEY_1 },
-	[XWII_KEY_TWO] = { .type = FUNC_KEY, .u.key = KEY_2 },
-};
-
-static struct func map_key_default_ir[XWII_KEY_NUM] = {
-	[XWII_KEY_LEFT] = { .type = FUNC_BTN, .u.btn = 1 },
-	[XWII_KEY_RIGHT] = { .type = FUNC_BTN, .u.btn = 3 },
-	[XWII_KEY_UP] = { .type = FUNC_IGNORE, .u.btn = 0 },
-	[XWII_KEY_DOWN] = { .type = FUNC_BTN, .u.btn = 2 },
-	[XWII_KEY_A] = { .type = FUNC_KEY, .u.key = KEY_ENTER },
-	[XWII_KEY_B] = { .type = FUNC_KEY, .u.key = KEY_SPACE },
-	[XWII_KEY_PLUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEUP },
-	[XWII_KEY_MINUS] = { .type = FUNC_KEY, .u.key = KEY_VOLUMEDOWN },
-	[XWII_KEY_HOME] = { .type = FUNC_KEY, .u.key = KEY_ESC },
-	[XWII_KEY_ONE] = { .type = FUNC_KEY, .u.key = KEY_1 },
-	[XWII_KEY_TWO] = { .type = FUNC_KEY, .u.key = KEY_2 },
+	[XWII_KEY_ONE] = { .type = FUNC_BTN, .u.btn = 2 },
+	[XWII_KEY_TWO] = { .type = FUNC_IGNORE, .u.key = KEY_2 },
 };
 
 
